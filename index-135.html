@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<title>Mis marcadores</title>
+<meta name="theme-color" content="#F3EEE3">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Marcadores">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Kaushan+Script&family=Source+Serif+4:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --paper:#F3EEE3;
+    --card:#FFFDF7;
+    --ink:#1F2A44;
+    --ink-soft:#3C4A6B;
+    --brass:#B08D57;
+    --brass-dark:#8C6E3F;
+    --muted:#8A8371;
+    --line:#D9D0BC;
+    --danger:#A8442E;
+  }
+  :root{
+    --font-sys: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--paper);
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(31,42,68,0.05) 1px, transparent 0);
+    background-size: 22px 22px;
+    color:var(--ink);
+    font-family:var(--font-sys);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:640px;margin:0 auto;padding:calc(28px + env(safe-area-inset-top)) 20px calc(80px + env(safe-area-inset-bottom));position:relative;}
+
+  header{
+    display:flex;align-items:flex-end;justify-content:space-between;
+    border-bottom:2px solid var(--ink);
+    padding-bottom:14px;margin-bottom:8px;
+  }
+  .drawer-label{
+    font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--brass-dark);font-family:var(--font-sys);
+    margin:0 0 4px;
+  }
+  h1{
+    font-family:'Kaushan Script', cursive;
+    font-weight:400;
+    font-size:44px;
+    letter-spacing:0;
+    margin:0;
+    line-height:1.05;
+    color:var(--ink);
+  }
+  .header-actions{display:flex;align-items:center;gap:2px;}
+  .menu-btn{
+    background:none;border:none;cursor:pointer;
+    color:var(--ink);padding:6px;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease;
+  }
+  .menu-btn:hover, .menu-btn:focus-visible{background:rgba(31,42,68,.08);outline:none;}
+  .menu-btn svg{width:26px;height:26px;}
+
+  .catalog-note{
+    font-family:var(--font-sys);
+    font-size:12px;color:var(--muted);
+    margin:0 0 26px;
+  }
+
+  #list{list-style:none;margin:0;padding:0;}
+
+  .cat-head{
+    display:flex;align-items:center;gap:10px;
+    margin:24px 0 10px;
+  }
+  .cat-head:first-of-type{margin-top:0;}
+  .cat-head .cat-line{height:1px;background:var(--line);flex:0 0 14px;}
+  .cat-head .cat-line.grow{flex:1;}
+  .cat-head .cat-name{
+    font-family:var(--font-sys);font-size:11px;
+    letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
+    white-space:nowrap;
+  }
+
+  .card{
+    background:var(--card);
+    border:1px solid var(--line);
+    border-left:4px solid var(--brass);
+    border-radius:3px;
+    margin-bottom:12px;
+    box-shadow:0 1px 2px rgba(31,42,68,.06);
+    transition:box-shadow .15s ease, transform .12s ease;
+  }
+  .card:active{transform:scale(.99);box-shadow:0 1px 1px rgba(31,42,68,.05);}
+
+  .card a{
+    display:flex;align-items:center;
+    padding:7px 18px;
+    text-decoration:none;color:var(--ink);
+    min-width:0;flex:1;
+  }
+  .card a .name{
+    font-family:var(--font-sys);
+    font-weight:400;font-size:18px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .card-row{display:flex;align-items:center;}
+  .card-actions{display:flex;align-items:center;gap:0;flex:0 0 auto;padding-right:8px;}
+  .card-action-btn{
+    background:none;border:none;cursor:pointer;
+    color:var(--muted);padding:6px;border-radius:6px;
+    display:flex;align-items:center;justify-content:center;
+    transition:background .15s ease,color .15s ease;
+  }
+  .card-action-btn:active{background:rgba(31,42,68,.08);}
+  .card-action-btn svg{width:17px;height:17px;}
+  .card-action-btn.copied{color:#3a7d52;}
+  .card-lock-icon{
+    display:flex;align-items:center;justify-content:center;
+    color:var(--brass);flex:0 0 auto;padding:6px 2px 6px 8px;
+    background:none;border:none;cursor:pointer;transition:color .2s ease;
+  }
+  .card-lock-icon svg{width:15px;height:15px;}
+  .card-lock-icon.relocked{color:#a4402a;}
+
+  .pwd-overlay{
+    position:fixed;inset:0;background:rgba(20,16,10,.45);
+    display:none;align-items:flex-start;justify-content:center;
+    z-index:80;padding:24px;padding-top:10vh;
+  }
+  .pwd-overlay.open{display:flex;}
+  .pwd-modal{
+    background:var(--paper);border:1px solid var(--line);border-radius:6px;
+    max-width:320px;width:100%;padding:22px 20px;
+    box-shadow:0 12px 30px rgba(20,16,10,.25);
+    max-height:80vh;overflow-y:auto;
+  }
+  .pwd-modal.wide{max-width:380px;}
+  .pwd-modal h3{
+    font-family:var(--font-sys);font-weight:600;font-size:18px;margin:0 0 6px;
+  }
+  .pwd-modal p{
+    font-family:var(--font-sys);font-size:11px;color:var(--muted);margin:0 0 14px;
+    letter-spacing:.02em;line-height:1.5;
+  }
+  .pwd-modal input{margin-bottom:4px;}
+  .pwd-input-wrap{position:relative;margin-bottom:4px;}
+  .pwd-input-wrap input{margin-bottom:0;padding-right:42px;}
+  .pwd-eye-toggle{
+    position:absolute;right:4px;top:50%;transform:translateY(-50%);
+    background:none;border:none;cursor:pointer;color:var(--muted);
+    padding:6px;display:flex;align-items:center;justify-content:center;
+  }
+  .pwd-eye-toggle svg{width:18px;height:18px;}
+  .pwd-eye-toggle .ic-eye-off{display:none;}
+  .pwd-eye-toggle[aria-pressed="true"] .ic-eye{display:none;}
+  .pwd-eye-toggle[aria-pressed="true"] .ic-eye-off{display:block;}
+  .pwd-error{
+    font-family:var(--font-sys);font-size:11px;color:#a4402a;
+    min-height:16px;margin:4px 0 10px;
+  }
+  .pwd-actions{display:flex;gap:8px;margin-top:6px;}
+  .pwd-actions button{
+    flex:1;padding:10px;border-radius:3px;cursor:pointer;
+    font-family:var(--font-sys);font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    border:1px solid var(--line);background:var(--card);color:var(--ink);
+  }
+  .pwd-actions button.primary{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+  .empty{
+    text-align:center;padding:60px 20px;color:var(--muted);
+    font-family:var(--font-sys);font-size:13px;
+    border:1px dashed var(--line);border-radius:4px;
+  }
+  .empty strong{display:block;font-family:var(--font-sys);font-size:20px;color:var(--ink);font-weight:600;margin-bottom:8px;}
+
+  /* Settings panel */
+  .overlay{
+    position:fixed;inset:0;background:rgba(31,42,68,.35);
+    opacity:0;pointer-events:none;transition:opacity .2s ease;
+    z-index:10;
+  }
+  .overlay.open{opacity:1;pointer-events:auto;}
+
+  .panel{
+    position:fixed;top:0;right:0;height:100%;width:min(380px,88vw);
+    background:var(--paper);
+    border-left:2px solid var(--ink);
+    transform:translateX(100%);
+    transition:transform .25s ease;
+    z-index:11;
+    display:flex;flex-direction:column;
+    padding:22px 20px;
+  }
+  .panel.open{transform:translateX(0);}
+  .panel h2{
+    font-family:var(--font-sys);font-size:24px;font-weight:700;
+    margin:0 0 4px;
+  }
+  .panel .sub{font-family:var(--font-sys);font-size:11px;color:var(--muted);margin:0 0 20px;text-transform:uppercase;letter-spacing:.1em;}
+  .close-btn{
+    position:absolute;top:20px;right:16px;background:none;border:none;
+    cursor:pointer;color:var(--ink);padding:4px;
+  }
+  .close-btn svg{width:22px;height:22px;}
+
+  label{
+    display:block;font-family:var(--font-sys);
+    font-size:11px;text-transform:uppercase;letter-spacing:.08em;
+    color:var(--ink-soft);margin:14px 0 5px;
+  }
+  input[type=text], input[type=url]{
+    width:100%;padding:10px 11px;
+    border:1px solid var(--line);border-radius:3px;
+    background:var(--card);color:var(--ink);
+    font-family:var(--font-sys);font-size:15px;
+  }
+  input:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:var(--brass);}
+
+  .add-btn{
+    margin-top:16px;width:100%;padding:11px;
+    background:var(--ink);color:var(--paper);border:none;border-radius:3px;
+    font-family:var(--font-sys);font-size:12px;letter-spacing:.06em;text-transform:uppercase;
+    cursor:pointer;transition:background .15s ease;
+  }
+  .add-btn:hover{background:var(--ink-soft);}
+
+  .lock-toggle{
+    margin-top:14px;width:100%;padding:10px 12px;
+    background:var(--card);color:var(--muted);border:1px solid var(--line);border-radius:3px;
+    display:flex;align-items:center;gap:9px;cursor:pointer;
+    font-family:var(--font-sys);font-size:14px;text-align:left;
+    transition:background .15s ease,color .15s ease,border-color .15s ease;
+  }
+  .lock-toggle svg{width:17px;height:17px;flex:0 0 auto;}
+  .lock-toggle .ic-locked{display:none;}
+  .lock-toggle[aria-pressed="true"]{background:#f4ede0;color:var(--ink);border-color:var(--brass);}
+  .lock-toggle[aria-pressed="true"] .ic-unlocked{display:none;}
+  .lock-toggle[aria-pressed="true"] .ic-locked{display:block;color:var(--brass);}
+
+  .panel-list{margin-top:24px;overflow-y:auto;flex:1;border-top:1px solid var(--line);padding-top:10px;position:relative;}
+
+  .panel-list-head{
+    display:flex;align-items:center;justify-content:space-between;
+    margin-top:26px;
+  }
+  .edit-toggle{
+    background:none;border:1px solid var(--line);border-radius:5px;
+    cursor:pointer;padding:6px 8px;color:var(--ink-soft);
+    display:flex;align-items:center;gap:5px;
+    font-family:var(--font-sys);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;
+    transition:background .15s ease, color .15s ease, border-color .15s ease;
+  }
+  .edit-toggle svg{width:14px;height:14px;}
+  .edit-toggle.active{background:var(--ink);color:var(--paper);border-color:var(--ink);}
+
+  .panel-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:9px 2px;border-bottom:1px solid var(--line);
+    gap:8px;
+  }
+  .panel-item .phandle{
+    display:none;
+    flex:0 0 26px;color:var(--muted);cursor:grab;
+    align-items:center;justify-content:center;
+    touch-action:none;
+    -webkit-user-select:none;user-select:none;
+  }
+  .panel-item.edit-mode .phandle{display:flex;}
+  .panel-item.edit-mode .info{cursor:pointer;}
+  .panel-item.dragging{
+    opacity:1;position:absolute;left:0;right:0;z-index:50;
+    background:var(--card);box-shadow:0 8px 18px rgba(31,42,68,.18);
+    border-radius:3px;
+  }
+  .panel-item.placeholder{border:1px dashed var(--brass);background:transparent;}
+  .phandle svg{width:15px;height:15px;}
+
+  .panel-item .info{min-width:0;flex:1;}
+  .panel-item .pname{font-family:var(--font-sys);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .panel-item .purl{font-family:var(--font-sys);font-size:10.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .del-btn{
+    background:none;border:none;cursor:pointer;color:var(--danger);
+    padding:6px;flex:0 0 auto;
+  }
+  .del-btn svg{width:16px;height:16px;}
+
+  .edit-row{padding:10px 2px;border-bottom:1px solid var(--line);}
+  .edit-row label{margin:8px 0 4px;}
+  .edit-row .edit-actions{display:flex;gap:8px;margin-top:12px;}
+  .edit-row .edit-actions button{
+    flex:1;padding:9px;border-radius:3px;border:none;cursor:pointer;
+    font-family:var(--font-sys);font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+  }
+  .save-edit{background:var(--ink);color:var(--paper);}
+  .save-edit:hover{background:var(--ink-soft);}
+  .cancel-edit{background:transparent;color:var(--ink-soft);border:1px solid var(--line) !important;}
+
+  .hint{font-family:var(--font-sys);font-size:10.5px;color:var(--muted);margin-top:22px;line-height:1.5;}
+
+  select{
+    width:100%;padding:10px 11px;
+    border:1px solid var(--line);border-radius:3px;
+    background:var(--card);color:var(--ink);
+    font-family:var(--font-sys);font-size:15px;
+  }
+  select:focus{outline:2px solid var(--brass);outline-offset:1px;border-color:var(--brass);}
+
+  .cat-add-row{display:flex;gap:8px;margin-top:8px;}
+  .cat-add-row input{flex:1;}
+  .cat-add-row button{
+    flex:0 0 auto;padding:0 16px;border:none;border-radius:3px;
+    background:var(--ink);color:var(--paper);cursor:pointer;
+    font-family:var(--font-sys);font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    transition:background .15s ease;
+  }
+  .cat-add-row button:hover{background:var(--ink-soft);}
+
+  .cat-panel-list{margin-top:10px;position:relative;}
+  .cat-item{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:8px 2px;border-bottom:1px solid var(--line);gap:8px;
+  }
+  .cat-item .phandle{
+    display:none;flex:0 0 26px;color:var(--muted);cursor:grab;
+    align-items:center;justify-content:center;touch-action:none;
+    -webkit-user-select:none;user-select:none;
+  }
+  .cat-item.edit-mode .phandle{display:flex;}
+  .cat-item.edit-mode .cinfo{cursor:pointer;}
+  .cat-item.dragging{
+    opacity:1;position:absolute;left:0;right:0;z-index:50;
+    background:var(--card);box-shadow:0 8px 18px rgba(31,42,68,.18);
+    border-radius:3px;
+  }
+  .cat-item.placeholder{border:1px dashed var(--brass);background:transparent;}
+  .cat-item .phandle svg{width:15px;height:15px;}
+  .cat-item .cinfo{min-width:0;flex:1;font-family:var(--font-sys);font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .cat-item .cname-input{width:100%;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <p class="drawer-label">Catálogo · A&nbsp;&ndash;&nbsp;Z</p>
+      <h1>Mis marcadores</h1>
+    </div>
+    <div class="header-actions">
+      <button class="menu-btn" id="openAddPanel" aria-label="Añadir marcador">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="menu-btn" id="openPanel" aria-label="Abrir ajustes">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg>
+      </button>
+    </div>
+  </header>
+  <p class="catalog-note" id="countLabel">cargando ficha…</p>
+
+  <ul id="list"></ul>
+  <div class="empty" id="emptyState" style="display:none;">
+    <strong>La ficha está vacía</strong>
+    Añade tu primer marcador desde el botón + de arriba
+  </div>
+</div>
+
+<div class="overlay" id="overlayAdd"></div>
+<div class="panel" id="panelAdd" role="dialog" aria-label="Añadir marcador">
+  <button class="close-btn" id="closeAddPanel" aria-label="Cerrar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <h2>Nuevo marcador</h2>
+  <p class="sub">Añadir a la ficha</p>
+  <form id="addForm">
+    <label for="fname">Nombre a mostrar</label>
+    <input type="text" id="fname" placeholder="p. ej. Correo" required maxlength="60">
+    <label for="furl">Enlace</label>
+    <input type="url" id="furl" placeholder="https://..." required>
+    <label for="fcat">Categoría</label>
+    <select id="fcat"></select>
+    <button type="button" class="lock-toggle" id="flock" aria-pressed="false">
+      <svg class="ic-unlocked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+      <svg class="ic-locked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span class="lock-toggle-text">Solicitar contraseña para abrir este enlace</span>
+    </button>
+    <button type="submit" class="add-btn">Añadir marcador</button>
+  </form>
+</div>
+
+<div class="overlay" id="overlay"></div>
+<div class="panel" id="panel" role="dialog" aria-label="Ajustes de marcadores">
+  <button class="close-btn" id="closePanel" aria-label="Cerrar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+  </button>
+  <h2>Ajustes</h2>
+  <div class="panel-list-head" style="margin-top:0;">
+    <p class="sub" style="margin:0;">Categorías</p>
+  </div>
+  <form id="addCatForm" class="cat-add-row">
+    <input type="text" id="fcatname" placeholder="Nueva categoría" maxlength="40" required>
+    <button type="submit">Añadir</button>
+  </form>
+  <div class="cat-panel-list" id="catPanelList"></div>
+
+  <div class="panel-list-head">
+    <p class="sub" style="margin:0;">Marcadores guardados</p>
+    <button class="edit-toggle" id="editToggle" type="button" aria-label="Modificar marcadores">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 0 1 4 4L7 21l-4 1 1-4Z"/></svg>
+      Editar
+    </button>
+  </div>
+  <div class="panel-list" id="panelList"></div>
+
+  <p class="hint" id="panelHint">Pulsa «Editar» para reordenar arrastrando o para tocar un marcador o categoría y cambiar su nombre.</p>
+
+  <div class="panel-list-head">
+    <p class="sub" style="margin:0;">Candado</p>
+  </div>
+  <div id="pwdSection"></div>
+</div>
+
+<div class="pwd-overlay" id="pwdOverlay">
+  <div class="pwd-modal">
+    <h3 id="pwdModalTitle">Marcador protegido</h3>
+    <p id="pwdModalHint">Introduce la contraseña para continuar.</p>
+    <div class="pwd-input-wrap">
+      <input type="password" id="pwdModalInput" placeholder="Contraseña" autocomplete="off">
+      <button type="button" class="pwd-eye-toggle" id="pwdModalEye" aria-label="Mostrar contraseña" aria-pressed="false">
+        <svg class="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg class="ic-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.4 21.4 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 5c7 0 11 7 11 7a21.5 21.5 0 0 1-2.61 3.68M14.12 14.12a3 3 0 1 1-4.24-4.24M1 1l22 22"/></svg>
+      </button>
+    </div>
+    <div class="pwd-error" id="pwdModalError"></div>
+    <div class="pwd-actions">
+      <button type="button" id="pwdModalCancel">Cancelar</button>
+      <button type="button" id="pwdModalOk" class="primary">Continuar</button>
+    </div>
+  </div>
+</div>
+
+<div class="pwd-overlay" id="bmEditOverlay">
+  <div class="pwd-modal wide">
+    <h3 id="bmEditModalTitle">Editar marcador</h3>
+    <label>Nombre a mostrar</label>
+    <input type="text" id="bmEditName" maxlength="60">
+    <label>Enlace</label>
+    <input type="url" id="bmEditUrl">
+    <label>Categoría</label>
+    <select id="bmEditCat"></select>
+    <button type="button" class="lock-toggle" id="bmEditLock" aria-pressed="false">
+      <svg class="ic-unlocked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 7.5-2"/></svg>
+      <svg class="ic-locked" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+      <span class="lock-toggle-text">Solicitar contraseña para abrir este enlace</span>
+    </button>
+    <div class="pwd-error" id="bmEditError"></div>
+    <div class="pwd-actions">
+      <button type="button" id="bmEditCancel">Cancelar</button>
+      <button type="button" id="bmEditSave" class="primary">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// --- Configura aquí tu proyecto de Supabase ---
+const SUPABASE_URL = 'https://izmtpbdmtzhjpwxzgicr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_pJMwZanGBMBygA1cZNSK0A_ykxSZglE';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let bookmarks = [];
+let appSettings = { password_hash: null, keyword_hash: null };
+let pwdPanelMode = 'view'; // view | create | edit
+let categories = [];
+
+async function loadBookmarks(){
+  const countLabel = document.getElementById('countLabel');
+  countLabel.textContent = 'cargando ficha…';
+  const [catRes, bmRes] = await Promise.all([
+    sb.from('categories').select('*').order('position', { ascending: true }),
+    sb.from('bookmarks').select('*').order('position', { ascending: true })
+  ]);
+  if(catRes.error || bmRes.error){
+    console.error(catRes.error || bmRes.error);
+    countLabel.textContent = 'no se pudo conectar con el catálogo';
+    return;
+  }
+  categories = catRes.data.map(row => ({ id: row.id, name: row.name, position: row.position }));
+  bookmarks = bmRes.data.map(row => ({ id: row.id, name: row.name, url: row.url, position: row.position, category_id: row.category_id || null, short_url: row.short_url || null, protected: !!row.protected }));
+  render();
+}
+
+async function addCategory(name){
+  const nextPos = categories.length ? Math.max(...categories.map(c=>c.position)) + 1 : 0;
+  const { data, error } = await sb
+    .from('categories')
+    .insert({ name, position: nextPos })
+    .select()
+    .single();
+  if(error){ console.error(error); return; }
+  categories.push({ id: data.id, name: data.name, position: data.position });
+  render();
+}
+
+async function deleteCategory(id){
+  const { error } = await sb.from('categories').delete().eq('id', id);
+  if(error){ console.error(error); return; }
+  categories = categories.filter(c => c.id !== id);
+  bookmarks.forEach(b => { if(b.category_id === id) b.category_id = null; });
+  render();
+}
+
+async function updateCategory(id, name){
+  const { error } = await sb.from('categories').update({ name }).eq('id', id);
+  if(error){ console.error(error); return; }
+  const c = categories.find(x => x.id === id);
+  if(c){ c.name = name; }
+}
+
+async function persistCategoryOrder(){
+  const updates = categories.map((c, i) => ({ id: c.id, position: i }));
+  categories.forEach((c, i) => c.position = i);
+  await Promise.all(updates.map(u =>
+    sb.from('categories').update({ position: u.position }).eq('id', u.id)
+  ));
+}
+
+function populateCategorySelect(sel, selectedId){
+  sel.innerHTML = '<option value="">Sin categoría</option>' +
+    categories.map(c => `<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('');
+  sel.value = selectedId || '';
+}
+
+async function addBookmark(name, url, categoryId, protectedVal){
+  const nextPos = bookmarks.length ? Math.max(...bookmarks.map(b=>b.position)) + 1 : 0;
+  const { data, error } = await sb
+    .from('bookmarks')
+    .insert({ name, url, position: nextPos, category_id: categoryId || null, protected: !!protectedVal })
+    .select()
+    .single();
+  if(error){ console.error(error); return; }
+  bookmarks.push({ id: data.id, name: data.name, url: data.url, position: data.position, category_id: data.category_id || null, short_url: data.short_url || null, protected: !!data.protected });
+  render();
+}
+
+async function deleteBookmark(id){
+  const { error } = await sb.from('bookmarks').delete().eq('id', id);
+  if(error){ console.error(error); return; }
+  bookmarks = bookmarks.filter(b => b.id !== id);
+  render();
+}
+
+async function updateBookmark(id, name, url, categoryId, protectedVal){
+  const b = bookmarks.find(x => x.id === id);
+  const urlChanged = b && b.url !== url;
+  const payload = { name, url, category_id: categoryId || null, protected: !!protectedVal };
+  if(urlChanged) payload.short_url = null;
+  const { error } = await sb.from('bookmarks').update(payload).eq('id', id);
+  if(error){ console.error(error); return; }
+  if(b){
+    b.name = name; b.url = url; b.category_id = categoryId || null; b.protected = !!protectedVal;
+    if(urlChanged) b.short_url = null;
+  }
+}
+
+async function getShortUrl(b){
+  if(b.short_url) return b.short_url;
+  try{
+    const { data, error } = await sb.functions.invoke('shorten-url', { body: { url: b.url } });
+    if(error || !data?.shortUrl){ console.error(error); return b.url; }
+    b.short_url = data.shortUrl;
+    await sb.from('bookmarks').update({ short_url: data.shortUrl }).eq('id', b.id);
+    return data.shortUrl;
+  }catch(err){
+    console.error(err);
+    return b.url;
+  }
+}
+
+async function copyToClipboard(text){
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    try{ await navigator.clipboard.writeText(text); return; }catch(err){ /* sigue al fallback */ }
+  }
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try{ document.execCommand('copy'); }catch(err){ /* nada más que hacer */ }
+  document.body.removeChild(ta);
+}
+
+function flashCopied(btn){
+  const original = btn.innerHTML;
+  btn.classList.add('copied');
+  btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+  setTimeout(()=>{ btn.innerHTML = original; btn.classList.remove('copied'); }, 1400);
+}
+
+async function persistOrder(){
+  // Actualiza el campo "position" de cada marcador según el nuevo orden
+  const updates = bookmarks.map((b, i) => ({ id: b.id, position: i }));
+  bookmarks.forEach((b, i) => b.position = i);
+  await Promise.all(updates.map(u =>
+    sb.from('bookmarks').update({ position: u.position }).eq('id', u.id)
+  ));
+}
+
+function hostFromUrl(u){
+  try{ return new URL(u).hostname.replace(/^www\./,''); }catch(e){ return u; }
+}
+
+function render(){
+  const list = document.getElementById('list');
+  const empty = document.getElementById('emptyState');
+  const count = document.getElementById('countLabel');
+  list.innerHTML = '';
+  count.textContent = bookmarks.length === 0 ? 'sin fichas registradas · sincronizado' :
+    bookmarks.length + (bookmarks.length === 1 ? ' ficha registrada · sincronizado' : ' fichas registradas · sincronizado');
+  empty.style.display = bookmarks.length === 0 ? 'block' : 'none';
+
+  function addCard(b){
+    const li = document.createElement('li');
+    li.className = 'card';
+    li.dataset.id = b.id;
+    li.innerHTML = `
+      <div class="card-row">
+        <a href="${b.url}" target="_blank" rel="noopener noreferrer">
+          <span class="name">${escapeHtml(b.name)}</span>
+        </a>
+        ${b.protected ? `<button type="button" class="card-lock-icon" aria-label="Volver a pedir contraseña en este dispositivo" title="Volver a pedir contraseña en este dispositivo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </button>` : ''}
+        <div class="card-actions">
+          <button type="button" class="card-action-btn share-btn" aria-label="Compartir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5"/></svg>
+          </button>
+          <button type="button" class="card-action-btn copy-btn" aria-label="Copiar enlace">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 9h9a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-9a2 2 0 0 1 2-2Z"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </div>
+      </div>`;
+    list.appendChild(li);
+
+    if(b.protected){
+      li.querySelector('a').addEventListener('click', (e)=>{
+        e.preventDefault();
+        openProtectedLink(b);
+      });
+      li.querySelector('.card-lock-icon').addEventListener('click', (e)=>{
+        e.preventDefault();
+        sessionStorage.removeItem('bm_unlocked');
+        const icon = e.currentTarget;
+        icon.classList.add('relocked');
+        setTimeout(()=> icon.classList.remove('relocked'), 700);
+      });
+    }
+
+    li.querySelector('.share-btn').addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const btn = e.currentTarget;
+      const shortUrl = await getShortUrl(b);
+      if(navigator.share){
+        try{ await navigator.share({ title: b.name, url: shortUrl }); }
+        catch(err){ /* usuario canceló, no hacer nada */ }
+      } else {
+        await copyToClipboard(shortUrl);
+        flashCopied(btn);
+      }
+    });
+
+    li.querySelector('.copy-btn').addEventListener('click', async (e)=>{
+      e.preventDefault();
+      const btn = e.currentTarget;
+      const shortUrl = await getShortUrl(b);
+      await copyToClipboard(shortUrl);
+      flashCopied(btn);
+    });
+  }
+
+  function addCatHead(name){
+    const head = document.createElement('div');
+    head.className = 'cat-head';
+    head.innerHTML = `<span class="cat-line"></span><span class="cat-name"></span><span class="cat-line grow"></span>`;
+    head.querySelector('.cat-name').textContent = name;
+    list.appendChild(head);
+  }
+
+  categories.forEach(c => {
+    const items = bookmarks.filter(b => b.category_id === c.id);
+    if(!items.length) return;
+    addCatHead(c.name);
+    items.forEach(addCard);
+  });
+  const uncategorized = bookmarks.filter(b => !b.category_id);
+  if(uncategorized.length){
+    addCatHead('Sin categoría');
+    uncategorized.forEach(addCard);
+  }
+
+  const fcat = document.getElementById('fcat');
+  populateCategorySelect(fcat, fcat.value);
+
+  renderPanelList();
+  renderCatPanelList();
+}
+
+let editMode = false;
+function renderPanelList(){
+  const panelList = document.getElementById('panelList');
+  const hint = document.getElementById('panelHint');
+  panelList.innerHTML = '';
+
+  if(bookmarks.length === 0){
+    panelList.innerHTML = '<p class="hint" style="margin-top:6px;">Todavía no hay marcadores guardados.</p>';
+    return;
+  }
+
+  hint.style.display = editMode ? 'block' : 'none';
+
+  bookmarks.forEach(b => {
+    const row = document.createElement('div');
+    row.className = 'panel-item' + (editMode ? ' edit-mode' : '');
+    row.dataset.id = b.id;
+    row.innerHTML = `
+      <div class="phandle" aria-label="Arrastrar para reordenar">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+      </div>
+      <div class="info">
+        <div class="pname">${escapeHtml(b.name)}</div>
+        <div class="purl">${escapeHtml(b.url)}</div>
+      </div>
+      <button class="del-btn" data-id="${b.id}" aria-label="Eliminar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h10l1-13"/></svg>
+      </button>`;
+    panelList.appendChild(row);
+
+    row.querySelector('.del-btn').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      deleteBookmark(b.id);
+    });
+
+    if(editMode){
+      row.querySelector('.info').addEventListener('click', ()=>{
+        openEditBookmarkModal(b);
+      });
+      attachDrag(row, {
+        listEl: panelList,
+        itemSelector: '.panel-item',
+        placeholderClass: 'panel-item placeholder',
+        onReorder: (ids) => {
+          bookmarks.sort((a,b)=> ids.indexOf(a.id) - ids.indexOf(b.id));
+          persistOrder();
+          render();
+        }
+      });
+    }
+  });
+}
+
+function openEditBookmarkModal(b){
+  const overlay = document.getElementById('bmEditOverlay');
+  const lockBtn = document.getElementById('bmEditLock');
+  document.getElementById('bmEditModalTitle').textContent = 'Editar marcador';
+  document.getElementById('bmEditName').value = b.name;
+  document.getElementById('bmEditUrl').value = b.url;
+  populateCategorySelect(document.getElementById('bmEditCat'), b.category_id);
+  lockBtn.setAttribute('aria-pressed', b.protected ? 'true' : 'false');
+  document.getElementById('bmEditError').textContent = '';
+  overlay.dataset.id = b.id;
+  overlay.classList.add('open');
+  setTimeout(() => document.getElementById('bmEditName').focus(), 50);
+}
+
+function closeEditBookmarkModal(){
+  document.getElementById('bmEditOverlay').classList.remove('open');
+}
+
+document.getElementById('bmEditLock').addEventListener('click', (e)=>{
+  handleLockToggle(e.currentTarget);
+});
+document.getElementById('bmEditCancel').addEventListener('click', closeEditBookmarkModal);
+document.getElementById('bmEditOverlay').addEventListener('click', (e)=>{
+  if(e.target.id === 'bmEditOverlay') closeEditBookmarkModal();
+});
+document.getElementById('bmEditSave').addEventListener('click', async ()=>{
+  const overlay = document.getElementById('bmEditOverlay');
+  const id = overlay.dataset.id;
+  const errEl = document.getElementById('bmEditError');
+  const newName = document.getElementById('bmEditName').value.trim();
+  let newUrl = document.getElementById('bmEditUrl').value.trim();
+  const newCat = document.getElementById('bmEditCat').value;
+  const newProtected = document.getElementById('bmEditLock').getAttribute('aria-pressed') === 'true';
+  if(!newName || !newUrl){ errEl.textContent = 'Rellena nombre y enlace.'; return; }
+  if(!/^https?:\/\//i.test(newUrl)) newUrl = 'https://' + newUrl;
+  await updateBookmark(id, newName, newUrl, newCat, newProtected);
+  closeEditBookmarkModal();
+  render();
+});
+
+let editingCatId = null;
+
+function renderCatPanelList(){
+  const catPanelList = document.getElementById('catPanelList');
+  catPanelList.innerHTML = '';
+
+  if(categories.length === 0){
+    catPanelList.innerHTML = '<p class="hint" style="margin-top:6px;">Todavía no hay categorías.</p>';
+    return;
+  }
+
+  categories.forEach(c => {
+    if(editingCatId === c.id){
+      const row = document.createElement('div');
+      row.className = 'edit-row';
+      row.dataset.id = c.id;
+      row.innerHTML = `
+        <label>Nombre de la categoría</label>
+        <input type="text" class="edit-cat-name cname-input" value="${escapeHtml(c.name)}" maxlength="40">
+        <div class="edit-actions">
+          <button type="button" class="cancel-edit">Cancelar</button>
+          <button type="button" class="save-edit">Guardar</button>
+        </div>`;
+      catPanelList.appendChild(row);
+      row.querySelector('.cancel-edit').addEventListener('click', ()=>{
+        editingCatId = null; renderCatPanelList();
+      });
+      row.querySelector('.save-edit').addEventListener('click', async ()=>{
+        const newName = row.querySelector('.edit-cat-name').value.trim();
+        if(!newName) return;
+        await updateCategory(c.id, newName);
+        editingCatId = null;
+        render();
+      });
+      return;
+    }
+
+    const row = document.createElement('div');
+    row.className = 'cat-item' + (editMode ? ' edit-mode' : '');
+    row.dataset.id = c.id;
+    row.innerHTML = `
+      <div class="phandle" aria-label="Arrastrar para reordenar">
+        <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg>
+      </div>
+      <div class="cinfo">${escapeHtml(c.name)}</div>
+      <button class="del-btn" data-id="${c.id}" aria-label="Eliminar categoría">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h10l1-13"/></svg>
+      </button>`;
+    catPanelList.appendChild(row);
+
+    row.querySelector('.del-btn').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      deleteCategory(c.id);
+    });
+
+    if(editMode){
+      row.querySelector('.cinfo').addEventListener('click', ()=>{
+        editingCatId = c.id;
+        renderCatPanelList();
+      });
+      attachDrag(row, {
+        listEl: catPanelList,
+        itemSelector: '.cat-item',
+        placeholderClass: 'cat-item placeholder',
+        getItems: () => categories,
+        onReorder: (ids) => {
+          categories.sort((a,b)=> ids.indexOf(a.id) - ids.indexOf(b.id));
+          persistCategoryOrder();
+          render();
+        }
+      });
+    }
+  });
+}
+
+document.getElementById('addCatForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const nameInput = document.getElementById('fcatname');
+  const name = nameInput.value.trim();
+  if(!name) return;
+  await addCategory(name);
+  nameInput.value = '';
+});
+
+document.getElementById('editToggle').addEventListener('click', ()=>{
+  editMode = !editMode;
+  editingCatId = null;
+  document.getElementById('editToggle').classList.toggle('active', editMode);
+  renderPanelList();
+  renderCatPanelList();
+});
+
+function escapeHtml(s){
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// --- Panel open/close ---
+const overlay = document.getElementById('overlay');
+const panel = document.getElementById('panel');
+const overlayAdd = document.getElementById('overlayAdd');
+const panelAdd = document.getElementById('panelAdd');
+
+function closePanel(){
+  overlay.classList.remove('open');
+  panel.classList.remove('open');
+}
+function closeAddPanel(){
+  overlayAdd.classList.remove('open');
+  panelAdd.classList.remove('open');
+}
+document.getElementById('openPanel').addEventListener('click', ()=>{
+  closeAddPanel();
+  overlay.classList.add('open');
+  panel.classList.add('open');
+});
+document.getElementById('openAddPanel').addEventListener('click', ()=>{
+  closePanel();
+  overlayAdd.classList.add('open');
+  panelAdd.classList.add('open');
+  document.getElementById('fname').focus();
+});
+document.getElementById('closePanel').addEventListener('click', closePanel);
+overlay.addEventListener('click', closePanel);
+document.getElementById('closeAddPanel').addEventListener('click', closeAddPanel);
+overlayAdd.addEventListener('click', closeAddPanel);
+
+// --- Add form ---
+document.getElementById('flock').addEventListener('click', (e)=>{
+  handleLockToggle(e.currentTarget);
+});
+
+document.getElementById('addForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const nameInput = document.getElementById('fname');
+  const urlInput = document.getElementById('furl');
+  const catSelect = document.getElementById('fcat');
+  const lockBtn = document.getElementById('flock');
+  const submitBtn = e.target.querySelector('.add-btn');
+  let url = urlInput.value.trim();
+  if(!/^https?:\/\//i.test(url)) url = 'https://' + url;
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'Añadiendo…';
+  await addBookmark(nameInput.value.trim(), url, catSelect.value, lockBtn.getAttribute('aria-pressed') === 'true');
+  submitBtn.disabled = false;
+  submitBtn.textContent = 'Añadir marcador';
+  nameInput.value = '';
+  urlInput.value = '';
+  lockBtn.setAttribute('aria-pressed', 'false');
+  closeAddPanel();
+});
+
+// --- Drag to reorder inside the settings panel (pointer events, touch + mouse) ---
+// Generic: works for the bookmarks list (#panelList, .panel-item) and the
+// categories list (#catPanelList, .cat-item) via the options passed in.
+let dragCtx = null; // { row, listEl, itemSelector, placeholderClass, placeholder, offsetY, rowHeight, onReorder }
+
+function attachDrag(row, opts){
+  const handle = row.querySelector('.phandle');
+  handle.addEventListener('pointerdown', (e)=>{
+    e.preventDefault();
+    const list = opts.listEl;
+    const listRect = list.getBoundingClientRect();
+    const rowRect = row.getBoundingClientRect();
+
+    const placeholder = document.createElement('div');
+    placeholder.className = opts.placeholderClass;
+    placeholder.style.height = rowRect.height + 'px';
+    list.insertBefore(placeholder, row);
+
+    dragCtx = {
+      row, listEl: list, itemSelector: opts.itemSelector,
+      placeholder, offsetY: e.clientY - rowRect.top, rowHeight: rowRect.height,
+      onReorder: opts.onReorder
+    };
+
+    row.classList.add('dragging');
+    row.style.top = (rowRect.top - listRect.top + list.scrollTop) + 'px';
+    row.style.height = rowRect.height + 'px';
+    list.appendChild(row);
+
+    document.body.style.userSelect = 'none';
+    handle.setPointerCapture(e.pointerId);
+    handle.addEventListener('pointermove', onDragMove);
+    handle.addEventListener('pointerup', onDragUp);
+    handle.addEventListener('pointercancel', onDragUp);
+  });
+}
+
+function onDragMove(e){
+  if(!dragCtx) return;
+  const { row, listEl, itemSelector, placeholder, offsetY, rowHeight } = dragCtx;
+  const listRect = listEl.getBoundingClientRect();
+  const top = e.clientY - listRect.top - offsetY + listEl.scrollTop;
+  row.style.top = top + 'px';
+
+  const dragMid = top + rowHeight/2;
+  const rows = [...listEl.querySelectorAll(itemSelector + ':not(.dragging)')];
+  let placed = false;
+  for(const r of rows){
+    if(r === placeholder) continue;
+    const rMid = r.offsetTop + r.offsetHeight/2;
+    if(dragMid < rMid){
+      listEl.insertBefore(placeholder, r);
+      placed = true;
+      break;
+    }
+  }
+  if(!placed){
+    listEl.appendChild(placeholder);
+  }
+
+  // Auto-scroll the panel when dragging near its edges
+  const margin = 40;
+  if(e.clientY - listRect.top < margin) listEl.scrollTop -= 12;
+  else if(listRect.bottom - e.clientY < margin) listEl.scrollTop += 12;
+}
+
+function onDragUp(e){
+  if(!dragCtx) return;
+  const { row, listEl, itemSelector, placeholder, onReorder } = dragCtx;
+  const handle = row.querySelector('.phandle');
+  handle.removeEventListener('pointermove', onDragMove);
+  handle.removeEventListener('pointerup', onDragUp);
+  handle.removeEventListener('pointercancel', onDragUp);
+
+  row.classList.remove('dragging');
+  row.style.top = '';
+  row.style.height = '';
+  placeholder.parentNode.insertBefore(row, placeholder);
+  placeholder.remove();
+  document.body.style.userSelect = '';
+
+  const ids = [...listEl.querySelectorAll(itemSelector)].map(r => r.dataset.id);
+  onReorder(ids);
+  dragCtx = null;
+}
+
+// --- Contraseña de marcadores protegidos ---
+
+function handleLockToggle(btn){
+  const pressed = btn.getAttribute('aria-pressed') === 'true';
+  const turningOn = !pressed;
+  btn.setAttribute('aria-pressed', String(turningOn));
+  if(turningOn && !appSettings.password_hash){
+    const wantsToSetup = confirm('Todavía no has configurado ninguna contraseña. ¿Quieres configurarla ahora?');
+    if(wantsToSetup){
+      closeAddPanel();
+      pwdPanelMode = 'create';
+      renderPwdSection();
+      overlay.classList.add('open');
+      panel.classList.add('open');
+    }
+  }
+}
+
+async function sha256Hex(text){
+  const enc = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', enc);
+  return [...new Uint8Array(digest)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function loadAppSettings(){
+  const { data, error } = await sb.from('app_settings').select('*').eq('id', 1).maybeSingle();
+  if(error){ console.error(error); return; }
+  if(data){
+    appSettings.password_hash = data.password_hash;
+    appSettings.keyword_hash = data.keyword_hash;
+  }
+}
+
+// Modal genérico de contraseña: reutilizado tanto para abrir un marcador
+// protegido como para verificar la palabra clave antes de modificarla.
+// mode: 'password' -> solo números, oculto con toggle de visibilidad.
+//       'keyword'  -> texto libre, siempre visible.
+function askPasswordModal({ title, hint, placeholder = 'Contraseña', verify, mode = 'password' }){
+  return new Promise((resolve) => {
+    const overlay = document.getElementById('pwdOverlay');
+    const input = document.getElementById('pwdModalInput');
+    const errorEl = document.getElementById('pwdModalError');
+    const okBtn = document.getElementById('pwdModalOk');
+    const cancelBtn = document.getElementById('pwdModalCancel');
+    const eyeBtn = document.getElementById('pwdModalEye');
+
+    document.getElementById('pwdModalTitle').textContent = title;
+    document.getElementById('pwdModalHint').textContent = hint;
+    input.placeholder = placeholder;
+    input.value = '';
+    errorEl.textContent = '';
+    overlay.classList.add('open');
+
+    if(mode === 'password'){
+      input.type = 'password';
+      input.setAttribute('inputmode', 'numeric');
+      input.setAttribute('pattern', '[0-9]*');
+      eyeBtn.style.display = 'flex';
+      eyeBtn.setAttribute('aria-pressed', 'false');
+    } else {
+      input.type = 'text';
+      input.removeAttribute('inputmode');
+      input.removeAttribute('pattern');
+      eyeBtn.style.display = 'none';
+    }
+    setTimeout(() => input.focus(), 50);
+
+    function cleanup(){
+      overlay.classList.remove('open');
+      okBtn.removeEventListener('click', attempt);
+      cancelBtn.removeEventListener('click', onCancel);
+      input.removeEventListener('keydown', onKeydown);
+      input.removeEventListener('input', onNumericInput);
+      eyeBtn.removeEventListener('click', onEyeToggle);
+    }
+    function onNumericInput(){
+      const digitsOnly = input.value.replace(/\D/g, '');
+      if(digitsOnly !== input.value) input.value = digitsOnly;
+    }
+    function onEyeToggle(){
+      const showing = eyeBtn.getAttribute('aria-pressed') === 'true';
+      eyeBtn.setAttribute('aria-pressed', String(!showing));
+      input.type = showing ? 'password' : 'text';
+    }
+    async function attempt(){
+      const val = input.value;
+      if(!val){ errorEl.textContent = mode === 'password' ? 'Escribe la contraseña.' : 'Escribe la palabra clave.'; return; }
+      okBtn.disabled = true;
+      const result = await verify(val);
+      okBtn.disabled = false;
+      if(result.ok){
+        cleanup();
+        resolve(true);
+      } else {
+        errorEl.textContent = result.message || 'Incorrecto. Inténtalo de nuevo.';
+        input.value = '';
+        input.focus();
+      }
+    }
+    function onCancel(){ cleanup(); resolve(false); }
+    function onKeydown(e){ if(e.key === 'Enter'){ e.preventDefault(); attempt(); } }
+
+    if(mode === 'password') input.addEventListener('input', onNumericInput);
+    eyeBtn.addEventListener('click', onEyeToggle);
+    okBtn.addEventListener('click', attempt);
+    cancelBtn.addEventListener('click', onCancel);
+    input.addEventListener('keydown', onKeydown);
+  });
+}
+
+async function openProtectedLink(b){
+  if(!appSettings.password_hash){
+    alert('Todavía no has configurado ninguna contraseña. Ve a Ajustes → Candado para crearla.');
+    return;
+  }
+  if(sessionStorage.getItem('bm_unlocked') === '1'){
+    window.open(b.url, '_blank', 'noopener,noreferrer');
+    return;
+  }
+  const ok = await askPasswordModal({
+    title: b.name,
+    hint: 'Este marcador está protegido. Introduce la contraseña para abrirlo.',
+    verify: async (val) => {
+      const h = await sha256Hex(val);
+      return h === appSettings.password_hash ? { ok: true } : { ok: false, message: 'Contraseña incorrecta.' };
+    }
+  });
+  if(ok){
+    sessionStorage.setItem('bm_unlocked', '1');
+    window.open(b.url, '_blank', 'noopener,noreferrer');
+  }
+}
+
+const ROOT_KEY = '0123456789';
+
+async function verifyKeywordThenEdit(){
+  let failedOnce = false;
+  const ok = await askPasswordModal({
+    title: 'Modificar contraseña',
+    hint: 'Introduce la palabra clave asociada para continuar.',
+    placeholder: 'Palabra clave',
+    mode: 'keyword',
+    verify: async (val) => {
+      const trimmed = val.trim();
+      if(trimmed === ROOT_KEY) return { ok: true };
+      const h = await sha256Hex(trimmed);
+      if(h === appSettings.keyword_hash) return { ok: true };
+      const message = failedOnce
+        ? 'Palabra clave incorrecta.'
+        : 'Palabra clave incorrecta. Si la has olvidado, introduce la clave raíz.';
+      failedOnce = true;
+      return { ok: false, message };
+    }
+  });
+  if(ok){ pwdPanelMode = 'edit'; renderPwdSection(); }
+}
+
+function renderPwdSection(){
+  const el = document.getElementById('pwdSection');
+  const hasPwd = !!appSettings.password_hash;
+
+  if(pwdPanelMode === 'view'){
+    el.innerHTML = hasPwd
+      ? `<p class="hint" style="margin-top:6px;">Contraseña configurada. Se pedirá al abrir cualquier marcador con el candado activado.</p>
+         <button type="button" class="edit-toggle" id="pwdActionBtn" style="margin-top:8px;">Modificar contraseña</button>`
+      : `<p class="hint" style="margin-top:6px;">Todavía no has configurado ninguna contraseña.</p>
+         <button type="button" class="edit-toggle" id="pwdActionBtn" style="margin-top:8px;">Configurar contraseña</button>`;
+    document.getElementById('pwdActionBtn').addEventListener('click', () => {
+      if(hasPwd){ verifyKeywordThenEdit(); }
+      else { pwdPanelMode = 'create'; renderPwdSection(); }
+    });
+    return;
+  }
+
+  const eyeSvg = `
+    <svg class="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+    <svg class="ic-eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-7 0-11-7-11-7a21.4 21.4 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 5c7 0 11 7 11 7a21.5 21.5 0 0 1-2.61 3.68M14.12 14.12a3 3 0 1 1-4.24-4.24M1 1l22 22"/></svg>`;
+
+  // create / edit: nueva contraseña (solo números) + confirmación + palabra clave (siempre visible)
+  el.innerHTML = `
+    <label>${hasPwd ? 'Nueva contraseña' : 'Contraseña'} (solo números)</label>
+    <div class="pwd-input-wrap">
+      <input type="password" id="pwdNew" inputmode="numeric" pattern="[0-9]*" placeholder="Contraseña" autocomplete="off">
+      <button type="button" class="pwd-eye-toggle" data-target="pwdNew" aria-label="Mostrar contraseña" aria-pressed="false">${eyeSvg}</button>
+    </div>
+    <label>Confirmar contraseña</label>
+    <div class="pwd-input-wrap">
+      <input type="password" id="pwdNewConfirm" inputmode="numeric" pattern="[0-9]*" placeholder="Repite la contraseña" autocomplete="off">
+      <button type="button" class="pwd-eye-toggle" data-target="pwdNewConfirm" aria-label="Mostrar contraseña" aria-pressed="false">${eyeSvg}</button>
+    </div>
+    <label>Palabra clave (siempre visible; se pedirá para poder modificar la contraseña más adelante)</label>
+    <input type="text" id="pwdKeyword" placeholder="Palabra clave" autocomplete="off">
+    <div class="pwd-error" id="pwdFormError"></div>
+    <div class="pwd-actions">
+      <button type="button" id="pwdCancelBtn">Cancelar</button>
+      <button type="button" id="pwdSaveBtn" class="primary">Guardar</button>
+    </div>`;
+
+  const pwdNewInput = document.getElementById('pwdNew');
+  const pwdConfirmInput = document.getElementById('pwdNewConfirm');
+  function stripNonDigits(e){
+    const digitsOnly = e.target.value.replace(/\D/g, '');
+    if(digitsOnly !== e.target.value) e.target.value = digitsOnly;
+  }
+  pwdNewInput.addEventListener('input', stripNonDigits);
+  pwdConfirmInput.addEventListener('input', stripNonDigits);
+
+  el.querySelectorAll('.pwd-eye-toggle').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = document.getElementById(btn.dataset.target);
+      const showing = btn.getAttribute('aria-pressed') === 'true';
+      btn.setAttribute('aria-pressed', String(!showing));
+      target.type = showing ? 'password' : 'text';
+    });
+  });
+
+  document.getElementById('pwdCancelBtn').addEventListener('click', () => {
+    pwdPanelMode = 'view'; renderPwdSection();
+  });
+  document.getElementById('pwdSaveBtn').addEventListener('click', async () => {
+    const newPwd = pwdNewInput.value;
+    const newPwdConfirm = pwdConfirmInput.value;
+    const newKw = document.getElementById('pwdKeyword').value.trim();
+    const errEl = document.getElementById('pwdFormError');
+    if(!newPwd || !newKw){ errEl.textContent = 'Rellena todos los campos.'; return; }
+    if(!/^\d+$/.test(newPwd)){ errEl.textContent = 'La contraseña debe contener solo números.'; return; }
+    if(newPwd !== newPwdConfirm){ errEl.textContent = 'Las contraseñas no coinciden.'; return; }
+    const password_hash = await sha256Hex(newPwd);
+    const keyword_hash = await sha256Hex(newKw);
+    const { error } = await sb.from('app_settings')
+      .upsert({ id: 1, password_hash, keyword_hash, updated_at: new Date().toISOString() });
+    if(error){ errEl.textContent = 'No se pudo guardar. Inténtalo de nuevo.'; console.error(error); return; }
+    appSettings.password_hash = password_hash;
+    appSettings.keyword_hash = keyword_hash;
+    sessionStorage.removeItem('bm_unlocked');
+    pwdPanelMode = 'view';
+    renderPwdSection();
+  });
+}
+
+loadAppSettings().then(renderPwdSection);
+
+loadBookmarks();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+</script>
+</body>
+</html>
