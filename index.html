@@ -83,15 +83,32 @@
 
   .cat-head{
     display:flex;align-items:center;gap:10px;
-    margin:24px 0 10px;
+    width:100%;margin:24px 0 10px;padding:4px 0;
+    background:none;border:none;cursor:pointer;text-align:left;
+    font:inherit;color:inherit;
+    -webkit-tap-highlight-color:transparent;
   }
   .cat-head:first-of-type{margin-top:0;}
+  .cat-head:focus-visible{outline:2px solid var(--brass);outline-offset:2px;border-radius:3px;}
   .cat-head .cat-line{height:1px;background:var(--line);flex:0 0 14px;}
   .cat-head .cat-line.grow{flex:1;}
   .cat-head .cat-name{
     font-family:var(--font-sys);font-size:11px;
     letter-spacing:.14em;text-transform:uppercase;color:var(--muted);
     white-space:nowrap;
+  }
+  .cat-head .cat-chevron{
+    flex:0 0 auto;width:14px;height:14px;color:var(--muted);
+    transition:transform .18s ease;
+  }
+  .cat-head[aria-expanded="false"] .cat-chevron{transform:rotate(-90deg);}
+  .cat-head .cat-count{
+    flex:0 0 auto;font-size:10.5px;color:var(--muted);opacity:0;
+    transition:opacity .18s ease;
+  }
+  .cat-head[aria-expanded="false"] .cat-count{opacity:1;}
+  @media (prefers-reduced-motion:reduce){
+    .cat-head .cat-chevron,.cat-head .cat-count{transition:none;}
   }
 
   .card{
@@ -639,6 +656,21 @@ function flashCopied(btn){
   setTimeout(()=>{ btn.innerHTML = original; btn.classList.remove('copied'); }, 1400);
 }
 
+const COLLAPSED_KEY = 'bm_collapsed_categories';
+function loadCollapsed(){
+  try{
+    const raw = localStorage.getItem(COLLAPSED_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr : []);
+  }catch(e){ return new Set(); }
+}
+let collapsedCats = loadCollapsed();
+function isCollapsed(key){ return collapsedCats.has(key); }
+function setCollapsed(key, value){
+  if(value) collapsedCats.add(key); else collapsedCats.delete(key);
+  try{ localStorage.setItem(COLLAPSED_KEY, JSON.stringify([...collapsedCats])); }catch(e){ /* sin almacenamiento: solo dura esta sesión */ }
+}
+
 async function persistOrder(){
   // Actualiza el campo "position" de cada marcador según el nuevo orden
   const updates = bookmarks.map((b, i) => ({ id: b.id, position: i }));
@@ -720,24 +752,36 @@ function render(){
     });
   }
 
-  function addCatHead(name){
-    const head = document.createElement('div');
+  // Devuelve true si la categoría está desplegada. El estado plegado se guarda
+  // en este dispositivo (localStorage) para recordarlo en futuros accesos.
+  function addCatHead(key, name, total){
+    const collapsed = isCollapsed(key);
+    const head = document.createElement('button');
+    head.type = 'button';
     head.className = 'cat-head';
-    head.innerHTML = `<span class="cat-line"></span><span class="cat-name"></span><span class="cat-line grow"></span>`;
+    head.setAttribute('aria-expanded', String(!collapsed));
+    head.innerHTML = `<span class="cat-line"></span>
+      <svg class="cat-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      <span class="cat-name"></span><span class="cat-count"></span>
+      <span class="cat-line grow"></span>`;
     head.querySelector('.cat-name').textContent = name;
+    head.querySelector('.cat-count').textContent = '(' + total + ')';
+    head.addEventListener('click', ()=>{
+      setCollapsed(key, !isCollapsed(key));
+      render();
+    });
     list.appendChild(head);
+    return !collapsed;
   }
 
   categories.forEach(c => {
     const items = bookmarks.filter(b => b.category_id === c.id);
     if(!items.length) return;
-    addCatHead(c.name);
-    items.forEach(addCard);
+    if(addCatHead(c.id, c.name, items.length)) items.forEach(addCard);
   });
   const uncategorized = bookmarks.filter(b => !b.category_id);
   if(uncategorized.length){
-    addCatHead('Sin categoría');
-    uncategorized.forEach(addCard);
+    if(addCatHead('__none', 'Sin categoría', uncategorized.length)) uncategorized.forEach(addCard);
   }
 
   const fcat = document.getElementById('fcat');
