@@ -73,6 +73,7 @@
   .menu-btn:hover, .menu-btn:focus-visible{background:rgba(31,42,68,.08);outline:none;}
   .menu-btn svg{width:26px;height:26px;}
   .menu-btn.copied{color:#3a7d52;}
+  .menu-btn.busy,.panel-share-btn.busy{opacity:.45;pointer-events:none;}
 
   .catalog-note{
     font-family:var(--font-sys);
@@ -1016,17 +1017,41 @@ overlay.addEventListener('click', closePanel);
 document.getElementById('closeAddPanel').addEventListener('click', closeAddPanel);
 overlayAdd.addEventListener('click', closeAddPanel);
 
-// Enlace corto de la web de marcadores (el mismo para todos los botones de compartir la web).
-const SITE_SHORT_URL = 'https://shorturl.at/JAdKx';
+// Enlace de la web de marcadores, acortado con la misma función (shorten-url)
+// que usan compartir/copiar de cada marcador. Se guarda en este dispositivo para
+// no volver a acortarlo; si el acortador falla se comparte el enlace completo.
+const SITE_URL = location.origin + location.pathname.replace(/index\.html$/, '');
+const SITE_SHORT_KEY = 'bm_site_short_url';
+async function getSiteShortUrl(){
+  try{
+    const cached = JSON.parse(localStorage.getItem(SITE_SHORT_KEY) || 'null');
+    if(cached && cached.for === SITE_URL && cached.short) return cached.short;
+  }catch(e){ /* sin caché */ }
+  try{
+    const { data, error } = await sb.functions.invoke('shorten-url', { body: { url: SITE_URL } });
+    if(error || !data?.shortUrl){ console.error(error); return SITE_URL; }
+    try{ localStorage.setItem(SITE_SHORT_KEY, JSON.stringify({ for: SITE_URL, short: data.shortUrl })); }catch(e){}
+    return data.shortUrl;
+  }catch(err){
+    console.error(err);
+    return SITE_URL;
+  }
+}
 async function shareSite(e){
   const btn = e.currentTarget;
+  if(btn.classList.contains('busy')) return;
+  btn.classList.add('busy');
+  const url = await getSiteShortUrl();
+  btn.classList.remove('busy');
   if(navigator.share){
-    try{ await navigator.share({ title: 'Mis marcadores', url: SITE_SHORT_URL }); }
-    catch(err){ /* usuario canceló, no hacer nada */ }
-  } else {
-    await copyToClipboard(SITE_SHORT_URL);
-    flashCopied(btn);
+    try{ await navigator.share({ title: 'Mis marcadores', url }); return; }
+    catch(err){
+      if(err && err.name === 'AbortError') return;   // el usuario canceló
+      /* si el navegador rechaza compartir, se copia el enlace */
+    }
   }
+  await copyToClipboard(url);
+  flashCopied(btn);
 }
 document.getElementById('panelShareBtn').addEventListener('click', shareSite);
 document.getElementById('headerShareBtn').addEventListener('click', shareSite);
