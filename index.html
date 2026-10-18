@@ -72,6 +72,7 @@
   }
   .menu-btn:hover, .menu-btn:focus-visible{background:rgba(31,42,68,.08);outline:none;}
   .menu-btn svg{width:26px;height:26px;}
+  .menu-btn.copied{color:#3a7d52;}
 
   .catalog-note{
     font-family:var(--font-sys);
@@ -404,6 +405,9 @@
     <div class="header-actions">
       <button class="menu-btn" id="openAddPanel" aria-label="Añadir marcador">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="menu-btn" id="headerShareBtn" aria-label="Compartir enlace de la web">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="M8.6 13.5 15.4 17.5M15.4 6.5 8.6 10.5"/></svg>
       </button>
       <button class="menu-btn" id="openPanel" aria-label="Abrir ajustes">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="5" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.4" fill="currentColor" stroke="none"/></svg>
@@ -1012,17 +1016,20 @@ overlay.addEventListener('click', closePanel);
 document.getElementById('closeAddPanel').addEventListener('click', closeAddPanel);
 overlayAdd.addEventListener('click', closeAddPanel);
 
-document.getElementById('panelShareBtn').addEventListener('click', async (e)=>{
-  const url = 'https://shorturl.at/JAdKx';
+// Enlace corto de la web de marcadores (el mismo para todos los botones de compartir la web).
+const SITE_SHORT_URL = 'https://shorturl.at/JAdKx';
+async function shareSite(e){
   const btn = e.currentTarget;
   if(navigator.share){
-    try{ await navigator.share({ url }); }
+    try{ await navigator.share({ title: 'Mis marcadores', url: SITE_SHORT_URL }); }
     catch(err){ /* usuario canceló, no hacer nada */ }
   } else {
-    await copyToClipboard(url);
+    await copyToClipboard(SITE_SHORT_URL);
     flashCopied(btn);
   }
-});
+}
+document.getElementById('panelShareBtn').addEventListener('click', shareSite);
+document.getElementById('headerShareBtn').addEventListener('click', shareSite);
 
 // --- Add form ---
 document.getElementById('flock').addEventListener('click', (e)=>{
