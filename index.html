@@ -250,6 +250,16 @@
   }
   .close-btn svg{width:22px;height:22px;}
 
+  .opt-row{
+    display:flex;align-items:center;gap:10px;margin:10px 0 0;
+    font-family:var(--font-sys);font-size:14px;color:var(--ink);cursor:pointer;
+    text-transform:none;letter-spacing:normal;
+  }
+  .opt-row input[type=checkbox]{
+    width:20px;height:20px;margin:0;flex:0 0 auto;
+    accent-color:var(--ink);cursor:pointer;
+  }
+
   .panel-share-btn{
     position:absolute;bottom:16px;right:16px;
     width:42px;height:42px;border-radius:50%;
@@ -474,6 +484,15 @@
   <p class="hint" id="panelHint">Pulsa «Editar» para reordenar arrastrando o para tocar un marcador o categoría y cambiar su nombre.</p>
 
   <div class="panel-list-head">
+    <p class="sub" style="margin:0;">Compartir</p>
+  </div>
+  <label class="opt-row" for="optShorten">
+    <input type="checkbox" id="optShorten">
+    <span>Acortar los enlaces al compartir o copiar</span>
+  </label>
+  <p class="hint" style="margin-top:6px;">Si el acortador falla, desmárcala para compartir el enlace completo. Se guarda en este dispositivo.</p>
+
+  <div class="panel-list-head">
     <p class="sub" style="margin:0;">Candado</p>
   </div>
   <div id="pwdSection"></div>
@@ -626,7 +645,18 @@ async function updateBookmark(id, name, url, categoryId, protectedVal){
   }
 }
 
+// Ajuste "Acortar enlaces": se guarda en este dispositivo (localStorage) para que
+// siga disponible aunque falle el acortador o la base de datos. Por defecto, activado.
+const SHORTEN_KEY = 'bm_shorten_links';
+function shortenEnabled(){
+  try{ return localStorage.getItem(SHORTEN_KEY) !== '0'; }catch(e){ return true; }
+}
+function setShortenEnabled(on){
+  try{ localStorage.setItem(SHORTEN_KEY, on ? '1' : '0'); }catch(e){ /* solo esta sesión */ }
+}
+
 async function getShortUrl(b){
+  if(!shortenEnabled()) return b.url;
   if(b.short_url) return b.short_url;
   try{
     const { data, error } = await sb.functions.invoke('shorten-url', { body: { url: b.url } });
@@ -1023,6 +1053,7 @@ overlayAdd.addEventListener('click', closeAddPanel);
 const SITE_URL = location.origin + location.pathname.replace(/index\.html$/, '');
 const SITE_SHORT_KEY = 'bm_site_short_url';
 async function getSiteShortUrl(){
+  if(!shortenEnabled()) return SITE_URL;
   try{
     const cached = JSON.parse(localStorage.getItem(SITE_SHORT_KEY) || 'null');
     if(cached && cached.for === SITE_URL && cached.short) return cached.short;
@@ -1055,6 +1086,10 @@ async function shareSite(e){
 }
 document.getElementById('panelShareBtn').addEventListener('click', shareSite);
 document.getElementById('headerShareBtn').addEventListener('click', shareSite);
+
+const optShorten = document.getElementById('optShorten');
+optShorten.checked = shortenEnabled();
+optShorten.addEventListener('change', ()=> setShortenEnabled(optShorten.checked));
 
 // --- Add form ---
 document.getElementById('flock').addEventListener('click', (e)=>{
